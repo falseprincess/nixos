@@ -17,9 +17,17 @@
       ./hardware-configuration.nix
     ];
 
-  # Enabling the bootloader.
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
+  # Enable grub
+  boot.loader = {
+    efi.canTouchEfiVariables = true;
+    grub.enable = true;
+    grub.devices = [ "nodev" ];
+    grub.efiSupport = true;
+    grub.useOSProber = true;
+    grub.backgroundColor = "#D8DEE9";
+    grub.configurationLimit = 10;
+    grub.splashImage = /home/sudozelda/Pictures/Wallpapers/nix.png;
+  };
 
   # Kernel.
   boot.kernelPackages = pkgs.linuxPackages_latest;
@@ -34,6 +42,8 @@
   SUBSYSTEM=="usb", ATTR{idVendor}=="04e6", ATTR{idProduct}=="e001", TAG+="uaccess", RUN{builtin}+="uaccess"
   ''; 
   };
+  # Enable adb.
+  programs.adb.enable = true;
 
   # Network.
   networking.networkmanager.enable = true;
@@ -41,8 +51,8 @@
 
   # Wireguard
   networking.wireguard.enable = true;
-  networking.iproute2.enable = true; # Needed for mullvad daemon
-  services.mullvad-vpn.enable = true;
+  # networking.iproute2.enable = true; # Needed for mullvad daemon
+  # services.mullvad-vpn.enable = true;
 
   # Timezone.
   time.timeZone = "America/Boise";
@@ -51,8 +61,8 @@
   # Per-interface useDHCP will be mandatory in the future, so this generated config
   # replicates the default behaviour.
   # networking.useDHCP = false;
-  # networking.interfaces.eno1.useDHCP = true;
-  # networking.interfaces.wlp4s0.useDHCP = true;
+  networking.interfaces.eno1.useDHCP = true;
+  networking.interfaces.wlp4s0.useDHCP = true;
 
   # Select internationalisation properties.
   i18n.defaultLocale = "en_US.UTF-8";
@@ -67,17 +77,36 @@
   autorun = true;
   layout = "us";
   displayManager.startx.enable = true;
-  windowManager.herbstluftwm.enable = true;
+  windowManager.berry.enable = true;
   videoDrivers = [ "nvidia" "modesetting" ];   
   };
-  
+
+  # Bash configuration.
+  programs.bash = {
+  # Start neofetch, and auto startx at tty1
+  shellInit = "if [[ -z $DISPLAY ]] && [[ $(tty) = /dev/tty1 ]]; then exec startx; fi";
+  shellAliases = {
+  # ls aliases  
+  l = "ls -alh";
+  ll = "ls -l";
+  ls = "ls --color=tty";
+  # Nixos related aliases.
+  edit-nix = "sudo vim /etc/nixos/configuration.nix";
+  nix-i = "nix-env -iA";
+  nix-d = "nix-env -e";
+  };  
+  # Enable extra colors in directory listings.
+  enableLsColors = true;
+  # Enable Bash completion for all interactive bash shells.
+  enableCompletion = true;
+  };
+
   # Audio. 
   sound.enable = true;
   nixpkgs.config.pulseaudio = true;
   hardware.pulseaudio = {
   enable = true;
   support32Bit = true;
-  package = pkgs.pulseaudioFull;
   };
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
@@ -85,7 +114,9 @@
     isNormalUser = true;
     home = "/home/sudozelda";
     description = "Sudozelda";
-    extraGroups = [ "wheel" "sudoers" "networkmanager" "video" "audio" ];
+    extraGroups = [ 
+      "wheel" "sudoers" "adbusers" "networkmanager" "video" "audio" 
+    ];
   };
 
   # List packages installed in system profile. To search, run:
@@ -95,14 +126,17 @@
     curl 
     git
     vim
+    udisks2
+    udiskie
     nitrogen
     htop
-    alsaTools
+    polybarFull
     neofetch
     xorg.xinit
-    mullvad-vpn
+    wireguard 
+    wireguard-tools
     xdg-user-dirs
-    palemoon
+    ungoogled-chromium
   ];
 
   # Enabling some fonts for my user.
@@ -121,11 +155,11 @@
     GDK_PIXBUF_MODULE_FILE = "$(echo ${pkgs.librsvg.out}/lib/gdk-pixbuf-2.0/*/loaders.cache)";
   };
 
- # Enable steam.
- programs.steam.enable = true;
+  # Enable steam.
+  # programs.steam.enable = true;
 
- # Enabling unfree packages system-wide.
- nixpkgs.config.allowUnfree = true;
+  # Enabling unfree packages system-wide.
+  nixpkgs.config.allowUnfree = true;
 
   # some programs need suid wrappers, can be configured further or are
   # started in user sessions.
